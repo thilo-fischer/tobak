@@ -27,11 +27,178 @@ require 'tobak/ui/cmdlineparser'
 # Things related to the currently running program instance.
 module Tobak::Session
 
+  module Helper
+
+    ##
+    # If +path+ ends with +File::SEPARATOR+, return path;
+    # if not, return +path+ with appended +File::SEPARATOR+.
+    def with_final_separator(path)
+      File.join(path, "")
+    end
+    
+  end # module Helper
+
+  class SourceResource
+  end # class Resource
+
+  class SourceVolume
+    
+    def initialize(resource, path_to_volume)
+      @resource = resource
+      @path_to_volume = Helper.with_final_separator(path_to_volume)
+    end # def initialize
+
+    def device_id
+      @device_id ||= File.stat(File.join(@path_to_volume, ".")).dev
+    end # def device_id
+
+    def abs_path_to_volume
+      @abs_path_to_volume ||= File.abs_path(@path_to_volume)
+    end # abs_path_to_volume
+    
+  end # class SourceVolume
+
+  class SourceFile
+    
+    attr_reader :path
+    
+    def initialize(volume, path)
+      @volume = volume
+      @path = path
+    end
+
+    def path_on_volume
+      unless @path_on_volume
+        abs_path = File.abs_path(path)
+        abs_vol_path = volume.abs_path_to_volume
+        raise unless abs_path.start_with?(abs_vol_path)
+        # note: volume.abs_path_to_volume ends with a File::SEPARATOR
+        @path_on_volume = abs_path[abs_vol_path.length .. -1]
+      end
+      @path_on_volume 
+    end # def path_on_volume
+    
+    def igore?
+      # TODO ignore files exceeding size threshold
+      # TODO ignore lists (similar to .gitignore)
+      
+      # Symlinks will not be resolved, but handled directly.
+      # => Symlinks shall not be resolved, but handled directly as
+      # symlinks. Thus they shall not be ignored even if the files
+      # they link to would be ignored. As File.file? resoves symlinks,
+      # take file into account if File.file? or File.symlink?
+      return true unless File.symlink?(@path) or File.file?(@path)
+      
+      return true if meta.stat.dev != @volume.device_id
+                         
+      false
+    end # def ignore?
+    
+    def checksum
+      @checksum %x{shasum -b "#{@path}"}.split(/\s/)[0]
+    end # def checksum
+
+    def stat
+      File.lstat(@path)
+    end # def stat
+    
+    def meta
+      {
+        :checksum => checksum,
+        :stat => stat,
+        :path => path_on_volume,
+      }
+    end # def meta
+
+    def integrate(repo)
+      repo.add(self)
+    end
+    
+  end # class SourceFile
+
+  class Repository
+
+    attr_reader :path
+
+    def initialize(path)
+      @path = with_final_separator(path)
+      @hashes = RepoHashes.new(self)
+    end
+
+    def add(file)
+      xxxxx
+
+    end
+ 
+  end # class Repository
+
+  class RepoHashes
+
+    def initialize(repository)
+      @repository = repository
+    end
+
+    def hash_to_path(hash)
+      elements = [ @repository.path, hash[0..1], hash[2..3], hash ]
+      File.join(elements)
+    end
+
+    def exist?(hash)
+      File.exist?(hash_to_path(hash))
+    end
+
+  end class RepoHashes
+  
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  
+  # FIXME move to appropriate package and file
+  class ResourceMeta
+    attr_reader :name, :description
+    def initialize(name, description = nil)
+      @name = name
+      @description = description
+    end
+  end
+
+  # FIXME move to appropriate package and file
+  class SessionMeta
+    attr_reader :destination, :commandline, :starttime, :comment
+    def initialize(destination, starttime = Time.new, tag = nil)
+      @destination = destination
+      @commandline = $ARGV
+      @starttime = starttime
+      @tag = tag || starttime_str
+    end
+    def starttime_str
+      @starttime.strftime('%F_%R').gsub(':', '-')
+    end
+  end
+
+  # FIXME move to appropriate package and file
+  class VolumeMeta
+    attr_reader :name, :description
+    def initialize(name, description = nil)
+      @name = name
+      @description = description
+    end
+  end
+
+  # FIXME move to appropriate package and file
+  class FileMeta
+    attr_reader :hash, :stat
+    def initialize(filename, hash = nil)
+      @hash = hash || filehash(filename)
+      @stat = File.lstat(filename)
+    end
+  end
+
   class Session
 
     include Singleton
 
     def run
+      starttime = Time.new
+
       @cmdlineparser = Tobak::Ui::CommandLineParser.new
       @cmdlineparser.parse
       
@@ -39,16 +206,17 @@ module Tobak::Session
 
       raise unless @cmdlineparser.destination
 
-      starttime = Time.new
       if @cmdlineparser.options.include?(:timestamp)
+        # XXX rename timestamp -> tag ?
         timestamp = @cmdlineparser.options[:timestamp]
       else
         timestamp = starttime.strftime('%F_%R').gsub(':', '-')
       end
 
-
       destdir = @cmdlineparser.destination
       raise unless File.exist?(destdir)
+
+      session_meta = SessionMeta.new(destdir, starttime, timestamp)
 
       hashdir = File.join(destdir, "hashes")
       Dir.mkdir(hashdir) unless File.exist?(hashdir)
@@ -136,7 +304,7 @@ module Tobak::Session
                 File.open("#{hashpath}.meta", 'a') do |f|
                   # TODO use YAML
                   f.puts("#{resname}/#{timestamp}/#{volname} : #{file}")
-                  f.puts(" properties #{%x{ls -l #{file}}}")
+                  #f.puts(" properties #{%x{ls -l #{file}}}")
                   f.puts(File.lstat(file))
                 end # hash.meta
                 
