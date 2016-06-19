@@ -1,0 +1,122 @@
+
+destdir
+|-- resources
+|   |-- RECOURCE_A
+|   |   |-- TAG_1
+|   |   |   |-- volumes
+|   |   |   |   |-- VOLUME_A
+|   |   |   |   |   |-- content
+|   |   |   |   |   |   `-- directories and files as found
+|   |   |   |   |   |       on the source volume, UID and GID
+|   |   |   |   |   |       adapted according to tobak
+|   |   |   |   |   |       configuration
+|   |   |   |   |   |-- meta
+|   |   |   |   |   |   `-- directory and file structure as
+|   |   |   |   |   |       found on the source volume,
+|   |   |   |   |   |       files containing meta data
+|   |   |   |   |   |       of the files found on the
+|   |   |   |   |   |       source volume:
+|   |   |   |   |   |       checksum, lstat (file
+|   |   |   |   |   |       permissions, ownership, etc.),
+|   |   |   |   |   |       filename as in the source volumes filename encoding,
+|   |   |   |   |   |       filename in UTF-8-encoding, ...
+|   |   |   |   |   |-- self.meta
+|   |   |   |   |   |   volume name and optional decription,
+|   |   |   |   |   |   device id,
+|   |   |   |   |   |   file system, size,
+|   |   |   |   |   |   free/used space on volume,
+|   |   |   |   |   |   partition properties (if applicable),
+|   |   |   |   |   |   UUID (if applicable)
+|   |   |   |   |   `-- log
+|   |   |   |   |       |-- general
+|   |   |   |   |       |   Start and finish time, ...
+|   |   |   |   |       |-- integrated
+|   |   |   |   |       |   List of files and directories copied.
+|   |   |   |   |       |   One file per line, prefixed with marker for status:
+|   |   |   |   |       |   N: new file, U: Update (file alredy exists in previous tag, but content changed), L: Link (file with same content already in repository)
+|   |   |   |   |       |-- ignored
+|   |   |   |   |       |   List of files and directories ignored when copying files.
+|   |   |   |   |       |   One file per line, prefixed with marker for ignore reason:
+|   |   |   |   |       |   S: Size, L: Ignore list, D: Other device, F: special file, ...
+|   |   |   |   |       |-- warnings
+|   |   |   |   |       |-- errors
+|   |   |   |   |       |   Reports on denied file access, ...
+|   |   |   |   |       `-- summary
+|   |   |   |   |           Numbers of files integrated to repository (N/U/L), ignored, warnings, errors, ...
+|   |   |   |   |           Numbers of bytes integrated, number of bytes newly allocated, ...
+|   |   |   |   |-- VOLUME_B
+|   |   |   |   |   ...
+|   |   |   |   |-- VOLUME_C
+|   |   |   |   |   ...
+|   |   |   |   ` ...
+|   |   |   |-- meta
+|   |   |   |   |-- resource
+|   |   |   |   |   resource name and optional decription,
+|   |   |   |   |   UUID or other unique identifier (if applicable),
+|   |   |   |   |   partition table(s) (if applicable),
+|   |   |   |   |   number of volumes contained,
+|   |   |   |   |   if single-volume resource meta data
+|   |   |   |   |   as with volumes
+|   |   |   |   `-- session => hardlinked with other session meta of the same tag
+|   |   |   |       
+|   |   |   `-- log
+|   |   |       |-- session => hardlinked with other session logs of the same tag
+|   |   |       |-- general
+|   |   |       |   Start and finish time, ...
+|   |   |       |-- warnings
+|   |   |       |-- errors
+|   |   |       `-- summary
+|   |   |           Accumulatd number of all contained volumes
+|   |   |-- TAG_2
+|   |   |   ...
+|   |   |-- TAG_4
+|   |   |   ...
+|   |   ` ...
+|   |-- RESOURCE_B
+|   |   `-- TAG_3
+|   |       |-- content
+|   |       |   ...
+|   |       |-- meta
+|   |       |   ...
+|   |       `-- log
+|   |           ...
+|   ` ...
+|-- hashes
+|   |-- 00
+|   |   |-- 00
+|   |   |   `-- all files that have a checksum starting with `0000' with the checksum used as filename
+|   |   |-- 01
+|   |   |   `-- all files that have a checksum starting with `0001' with the checksum used as filename
+|   |   | ...
+|   |   `-- ff
+|   |       `-- all files that have a checksum starting with `00ff' with the checksum used as filename
+|   |-- 01
+|   | ...
+|   `-- ff
+|       ...
+|-- sessions
+|   |-- TAG_1
+|   |   |-- resources
+|   |   |   `-- RECOURCE_A => symlink to resources/RESOURCE_A/TAG_1
+|   |   |-- meta => hardlinked with other session meta of the same tag
+|   |   `-- log => hardlinked with other session logs of the same tag
+|   |-- TAG_2
+|   |-- TAG_3
+|   |-- TAG_4
+|-- meta
+|   date of creation
+|   tobak version number
+|   
+
+
+
+The name of a resource may contain slashes which will result in
+additional directory layers and allows to group resources, e.g.
+outdated-systems/win98-p3-desktop/
+outdated-systems/winXp-pm-notebook/
+media/cd-rom/backup_2003-09-14
+media/cd-rom/misc-data_2004-02-11
+media/floppys/3_5inch/documents
+media/floppys/3_5inch/backups
+media/floppys/3_5inch/nethack
+media/floppys/5_25inch/old_documents
