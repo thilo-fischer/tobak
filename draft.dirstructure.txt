@@ -1,5 +1,5 @@
 
-destdir
+REPO_BASE_DIR
 |-- resources
 |   |-- RECOURCE_A
 |   |   |-- TAG_1
@@ -10,7 +10,7 @@ destdir
 |   |   |   |   |   |       on the source volume, UID and GID
 |   |   |   |   |   |       adapted according to tobak
 |   |   |   |   |   |       configuration
-|   |   |   |   |   |-- meta
+|   |   |   |   |   |-- cmeta
 |   |   |   |   |   |   `-- directory and file structure as
 |   |   |   |   |   |       found on the source volume,
 |   |   |   |   |   |       files containing meta data
@@ -20,7 +20,7 @@ destdir
 |   |   |   |   |   |       permissions, ownership, etc.),
 |   |   |   |   |   |       filename as in the source volumes filename encoding,
 |   |   |   |   |   |       filename in UTF-8-encoding, ...
-|   |   |   |   |   |-- self.meta
+|   |   |   |   |   |-- meta
 |   |   |   |   |   |   volume name and optional decription,
 |   |   |   |   |   |   device id,
 |   |   |   |   |   |   file system, size,

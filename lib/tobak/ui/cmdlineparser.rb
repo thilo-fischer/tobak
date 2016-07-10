@@ -54,7 +54,7 @@ module Tobak::Ui
       option_parser = OptionParser.new do |opts|
 
         opts.banner =
-          "Usage: #{File.basename $0} --destination=<path> [ --timestamp=<timestamp> ] ( resource-options ( <path-to-resource> | ( volume-options <path-to-volume> ... ) ) ... )"
+          "Usage: #{File.basename $0} --destination=<path> [ --tag=<sessiontag> ] ( resource-options ( <path-to-resource> | ( volume-options <path-to-volume> ... ) ) ... )"
 
         opts.separator ""
       opts.separator "resource-options:"
@@ -70,13 +70,13 @@ module Tobak::Ui
 
       opts.on("-dPATH",
                 "--destination=PATH",
-                "The directory where to find an existing or setup a new tobak backup file structure to which to add the files being backed up.") do |arg|
+                "The directory where to find an existing or create a new tobak backup file structure to which to add the files being backed up.") do |arg|
           @destination = arg
         end
 
-        opts.on("--timestamp=YYYY-MM-DD_hh-mm",
-                "Use the given string instead of the timestamp of this tobak session. Shall be a string that is easy to handle as a file name (e.g. no special characters like '/' or ':'). The default used when no timestamp option is given is the time and date of the tobac program start in the format YYYY-MM-DD_hh-mm.") do |arg|
-          @options[:timestamp] = arg
+        opts.on("--tag=sessiontag",
+                "Use the given string instead of the timestamp to name this tobak session. Shall be a string that is easy to handle as a file name (e.g. no special characters like '/' or ':'). The default used when no tag option is given is the time and date of the tobac program start in the format YYYY-MM-DD_hh-mm.") do |arg|
+          @options[:tag] = arg
         end
 
 
