@@ -35,7 +35,7 @@ module Tobak::Session
     def with_final_separator(path)
       File.join(path, "")
     end
-    
+
   end # module Helper
 
   class SourceResource
@@ -116,18 +116,48 @@ module Tobak::Session
     
   end # class SourceFile
 
+
+  require 'fileutils'
+  
   class Repository
 
     attr_reader :path
 
     def initialize(path)
       @path = with_final_separator(path)
+      raise unless File.directory(@path)
       @hashes = RepoHashes.new(self)
     end
 
     def add(file)
-      xxxxx
+      hash = file.checksum
+      hash_path = @hashes.hash_to_path(hash)
+      if File.exist?(hash_path)
+        # TODO log "L #{hash} #{file.path_on_volume}"
+        # XXX compare file content itself if --paranoid command line option active
+      else
+        hash_dir = File.dirname(hash_path)
+        FileUtils.mkdir_p(hash_dir)
+        FileUtils.copy(file.path, hash_path)
+        # TODO log "N #{hash} #{file.path_on_volume}"
+      end
+      target_path = File.join(file.volume.content_dir, file.path_on_volume)
+      File.link(hash_path, target_path)
+      meta_path = File.join(file.volume.meta_dir, file.path_on_volume)
+      File.open(meta_path, 'a') do |f|
+        f.puts(file.meta.to_yaml)
+      end
+    end
 
+    ##
+    # setup tobak repository at the given directory
+    def setup
+      raise unless File.directory?(@path)
+      FileUtils.mkdir(File.join(@path, "resources"))
+      FileUtils.mkdir(File.join(@path, "hashes"))
+      FileUtils.mkdir(File.join(@path, "sessions"))
+      FileUtils.mkdir(File.join(@path, "meta"))
+      # TODO log date of creation, tobak version number
     end
  
   end # class Repository
@@ -136,7 +166,11 @@ module Tobak::Session
 
     def initialize(repository)
       @repository = repository
-    end
+
+      @directory = File.join(@repository.path, 'hashes')
+      
+      Dir.mkdir(@directory) unless File.exist?(@directory)
+    end # def initialize
 
     def hash_to_path(hash)
       elements = [ @repository.path, hash[0..1], hash[2..3], hash ]
@@ -147,9 +181,8 @@ module Tobak::Session
       File.exist?(hash_to_path(hash))
     end
 
-  end class RepoHashes
+  end # class RepoHashes
   
-# XXXXXXXXXXXXXXXXXXXXXXXXXXXX
   
   # FIXME move to appropriate package and file
   class ResourceMeta
@@ -213,13 +246,9 @@ module Tobak::Session
         timestamp = starttime.strftime('%F_%R').gsub(':', '-')
       end
 
-      destdir = @cmdlineparser.destination
-      raise unless File.exist?(destdir)
+      repo = Repository.new(@cmdlineparser.destination)
 
       session_meta = SessionMeta.new(destdir, starttime, timestamp)
-
-      hashdir = File.join(destdir, "hashes")
-      Dir.mkdir(hashdir) unless File.exist?(hashdir)
 
       @cmdlineparser.resources.each do |res|
 
@@ -276,38 +305,17 @@ module Tobak::Session
             
             open("|find \"#{volpath}\" -print0") do |findstream|
               findstream.each("\0") do |file|
-                # FIXME strip volpath from file where necessary
-
-                # TODO check if filesize is below threshold
-                #       `-> log if file is being skipped
 
                 # TODO check if file already exists in the most recent backup of resource
                 #       `-> check if file modification date changed
                 #       `-> if not changed: write only file metadata changes (if any) or write no-change note to metadata record
                 
-                puts "#{file}"
-                hash = %x{shasum -b "#{file}"}.split(/\s/)[0]
-                puts "#{file} :: #{hash}"
-
-                hashpath = File.join(hashdir, hash) # TODO create subdirectories of hashdir
-
-                unless File.exist?(hashpath)
-                  # TODO log "Add new file `file'."
-                  system("cp \"#{file}\" \"#{hashpath}\"") # XXX copy using ruby command?
+                if (file.ignore?)
+                  # TODO log I
                 else
-                  # TODO log "Add link for known file `file'."
-                  # TODO if command line option "--paranoid" was given, test File.identical?
+                  repo.add(file)
                 end
-
-                File.link(hashpath, File.join(voldir, file))
-
-                File.open("#{hashpath}.meta", 'a') do |f|
-                  # TODO use YAML
-                  f.puts("#{resname}/#{timestamp}/#{volname} : #{file}")
-                  #f.puts(" properties #{%x{ls -l #{file}}}")
-                  f.puts(File.lstat(file))
-                end # hash.meta
-                
+                           
               end # each file found
               
             end # findstream
