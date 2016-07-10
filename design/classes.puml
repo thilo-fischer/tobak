@@ -1,0 +1,63 @@
+@startuml
+
+skinparam monochrome true
+
+class Main {
+  + getInstance() : Main
+  + run()
+}
+
+class Session {
+  + integrate_into(r : Repository)
+  + meta()
+  + tag  
+}
+
+Main --> Session
+
+class Repository {
+  + setup()
+  + test()
+  + integrate(s : Subject)
+  + meta()
+  + name
+  + description
+}
+
+Session --> 1 Repository : repository
+
+class Subject {
+  + integrate_into(r : Repository)
+  + meta()
+}
+note top : entities to be backed up in the repository
+
+Session --> Subject : subjects
+
+class Resource {
+  + name
+  + description
+}
+
+Subject --|> Resource
+
+class Volume {
+  + name
+  + description
+}
+
+Subject --|> Volume
+Volume 1 --> 1 Resource : Parent
+
+class File {
+  + path()
+  + path_on_volume()
+  + basename()
+  + checksum()
+  
+}
+
+Subject --|> File
+File 1 --> 1 Volume : Parent
+
+@enduml
