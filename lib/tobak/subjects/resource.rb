@@ -25,6 +25,37 @@ module Tobak::Subjects
       @name = name
       @description = description
     end
+
+    def prepare(session)
+      @respath = session.repository.resource_path(self)
+      FileUtils.mkdir(@respath) unless File.directory?(@respath)
+
+      # FIXME @sesspath, @vol_dir etc. should be session specific
+      
+      @sesspath = File.join(@respath, session.tag)
+      raise if File.directory?(@sesspath)
+      FileUtils.mkdir(@sesspath)
+
+      @vol_dir = File.join(@sessdir, 'volumes')
+      FileUtils.mkdir(@vol_dir)
+
+      meta_dir = File.join(@sessdir, 'meta')
+      File.link(session.meta_file_path, File.join(meta_dir, session))
+      File.open(File.join(meta_dir, 'resource')) do |f|
+        f.puts(meta.to_yaml)
+      end
+
+      log_dir = File.join(@sessdir, 'log')
+      File.link(session.log_file_path, File.join(log_dir, session))
+      # FIXME logfiles general, warnings, errors, summary, ...
+   end
+
+    def meta
+      {
+        :name => @name,
+        :description => @description,
+      }
+    end
   end
 
 end # module Tobak::Subjects

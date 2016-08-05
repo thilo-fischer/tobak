@@ -20,20 +20,57 @@ module Tobak::Subjects
     
     attr_reader :name, :description
 
-    def initialize(resource, path_to_volume, name, description = nil)
-      @resource = resource
-      @path_to_volume = Tobak.Helper.with_final_separator(path_to_volume)
+    def initialize(name, path, root = nil, description = nil)
       @name = name
+      @path = Tobak::Helper.with_final_separator(path)
+      @root = root || real_path
       @description = description
     end # def initialize
 
+    def prepare(resource_session)
+      raise unless real_path.start_with?(@root) # TODO check if @root is mount point of @path
+      
+      vol_dir = resource_session.volume_dir(@name)
+
+      @content_dir = File.join(vol_dir, 'content')
+      FileUtils.mkdir(@content_dir)
+      @cmeta_dir = File.join(vol_dir, 'cmeta')
+      FileUtils.mkdir(@cmeta_dir)
+      
+      File.open(File.join(vol_dir, 'meta')) do |f|
+        f.puts(meta.to_yaml)
+      end
+
+      log_dir = File.join(vol_dir, 'log')
+      # TODO logfiles general, integrated, ignored, warnings, errors, summary, ...
+    end # def prepare
+    
+    def meta
+      {
+        :name => @name,
+        :description => @description,
+        :path => @path,
+        :real_path => real_path,
+        :mountpoint => @root,
+        :device_id => device_id,
+        :file_system => nil, # TODO
+        :df => %x{df "#{@path}"}, # TODO
+        :df_h => %x{df -h "#{@path}"}, # TODO
+        # ... => TODO
+      }
+    end # def meta
+    
     def device_id
-      @device_id ||= File.stat(File.join(@path_to_volume, ".")).dev
+      @device_id ||= File.stat(File.join(@path, ".")).dev
     end # def device_id
 
-    def abs_path_to_volume
-      @abs_path_to_volume ||= File.abs_path(@path_to_volume)
-    end # abs_path_to_volume
+    #def abs_path_to_volume
+    #  @abs_path_to_volume ||= File.abs_path(@path_to_volume)
+    #end # abs_path_to_volume
+    
+    def real_path
+      @real_path ||= File.real_path(@path)
+    end # real_path
     
   end # class SourceVolume
 

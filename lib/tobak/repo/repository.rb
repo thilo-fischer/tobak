@@ -16,13 +16,12 @@
 
 module Tobak::Repo
 
-    class Repository
+  class Repository
 
     attr_reader :path
 
     def initialize(path)
-      @path = with_final_separator(path)
-      @hashes = RepoHashes.new(self)
+      @path = Tobak::Helpers::with_final_separator(path)
     end
 
     def add(file)
@@ -56,12 +55,16 @@ module Tobak::Repo
       File.join(@path, "resources")
     end
 
+    def resource_path(resource)
+      File.join(resources_dir_path, resource.name)
+    end
+
     def hashes_dir_path
       File.join(@path, "hashes")
     end
 
     def hash_path(hash)
-      elements = [ @repository.path, hash[0..1], hash[2..3], hash ]
+      elements = [ hashes_dir_path, hash[0..1], hash[2..3], hash ]
       File.join(elements)
     end
 

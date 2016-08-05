@@ -50,36 +50,29 @@ module Tobak::Session
       session = Session.new(@repo, @commandline, @starttime, @tag)
       session.setup
 
-      @cmdlineparser.resources.each do |res|
+      @cmdlineparser.resources.each do |res_param|
 
-        if res.name == :auto
+        if res_param.name == :auto
           resname = "misc" # XXX
         else
-          resname = res.name
-        end
-        
-        resdir = File.join(destdir, resname, timestamp)
-        raise "Already exists: `#{resdir}'. Aborting." if File.exist?(resdir)
-        Dir.mkdir(resdir)
-        
-        reslog_filename = "#{resdir}.log"
-        resmeta_filename = "#{resdir}.meta"
-
-        File.open(resmeta_filename, 'a') do |f|
-          # TODO use YAML
-          f.puts("$0 session")
-          f.puts(" started at #{starttime} (timestamp: #{timestamp})")
-          f.puts(" started by #{%x{whoami}}")
-          f.puts(" running on #{%x{hostname}} (#{%x{uname -a}})")
-          f.puts(" running as process #{$$}")
+          resname = res_param.name
         end
 
-        if res.path
-          raise "not yet implemented"
-        else
-          res.volumes.each do |v|
+        res_obj = Tobak::Subjects::Resource.new(resname, res_param.comment)
+        res_session = res_obj.prepare(session)
 
-            volpath = File.realpath(v.path)
+        res.volumes.each do |vol_param|
+          
+          if vol_param.name == :auto
+            volname = Tobak::Subjects::Volume.name_from_path(vol_param.path)
+          else
+            volname = vol_param.name
+          end
+
+          vol_obj = Tobak::Subjects::Volume.new(volname, vol_param.path, vol_param.root, vol_param.comment)
+          vol_obj.prepare(res_session)
+
+            volpath = File.realpath(vol_.path)
             raise unless File.exist?(volpath)
 
             if v.name == :auto

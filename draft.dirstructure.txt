@@ -84,6 +84,14 @@ REPO_BASE_DIR
 |-- hashes
 |   |-- 00
 |   |   |-- 00
+|   |   |   |-- 0000*
+|   |   |   |   |-- file
+|   |   |   |   `-- instances
+|   |   |   |       |   => textfile containing file paths or
+|   |   |   |       |      directory contaning symlinks or containing text files
+|   |   |   |       |      that contain one file path each
+|   |   |   |       |      pointing to the file's instances in the content folder
+|   |   |   |       `-- RESOURCE_A_TAG_1_VOLUME_A
 |   |   |   `-- all files that have a checksum starting with `0000' with the checksum used as filename
 |   |   |-- 01
 |   |   |   `-- all files that have a checksum starting with `0001' with the checksum used as filename
