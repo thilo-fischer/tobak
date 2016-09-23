@@ -57,7 +57,7 @@ end
 
 Given(/^the directory contains$/) do |table|
   # table is a Cucumber::Core::Ast::DataTable
-  tabele.hashes.each do |row|
+  table.hashes.each do |row|
     path = File.join(@recent_dir, row[file_name])
       
     raise "must provide type info" unless row.key?("type")
@@ -98,7 +98,7 @@ end
 
 Then(/^these directories shall exist$/) do |table|
   # table is a Cucumber::Core::Ast::DataTable
-  tabele.hashes.all? do |row|
+  table.hashes.all? do |row|
     path = File.join(@repo_root, row[dir_name])
     next false if not Dir.exist?(path)
     if row.key?("empty")
@@ -135,7 +135,7 @@ end
 
 Then(/^the directory shall contain$/) do |table|
   # table is a Cucumber::Core::Ast::DataTable
-  tabele.hashes.all? do |row|
+  table.hashes.all? do |row|
     path = File.join(@recent_dir, row[element_name])
     next false if not File.exist?(path)
     if row.key?("type")

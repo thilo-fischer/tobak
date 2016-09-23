@@ -12,14 +12,14 @@ Feature: File Backup
     Given the testing repositories' root will be "/tmp/tobak-test/repo-root"
     And a virtual resource "resource01" can be found at "/tmp/tobak-test/resource01"
     And a virtual resource "resource02" can be found at "/tmp/tobak-test/resource02"
-    And a virtual resource "resourceVol"  can be found at "/tmp/tobak-test/resourceVol"
+    And a virtual resource "resourceVol" can be found at "/tmp/tobak-test/resourceVol"
     And the virtual resource has these volumes:
       | volume_name |
       | volume01    |
       | volume02    |
 
   Scenario: Create repository
-    Given an empty test repositories directory
+    Given an empty test repository directory
     When I successfully run `tobak --destination="#{@destination}"`
     Then these directories shall exist
       | dir_name     |
