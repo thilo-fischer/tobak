@@ -22,8 +22,8 @@
 module Tobak
 
   require 'tobak'
-  require 'tobak/session/session'
+  require 'tobak/session/main'
 
-  Tobak::Session::Session.instance.run
+  Tobak::Session::Main.instance.run
   
 end # module Tobak

@@ -19,6 +19,8 @@
 
 require 'singleton'
 
+require 'tobak/session/session'
+
 ##
 # Things related to the currently running program instance.
 module Tobak::Session  
@@ -30,7 +32,7 @@ module Tobak::Session
     def run
       @starttime = Time.new
 
-      @commandline = $ARGV.dup
+      @commandline = ARGV.dup
 
       @cmdlineparser = Tobak::Ui::CommandLineParser.new
       @cmdlineparser.parse
@@ -72,50 +74,48 @@ module Tobak::Session
           vol_obj = Tobak::Subjects::Volume.new(volname, vol_param.path, vol_param.root, vol_param.comment)
           vol_obj.prepare(res_session)
 
-            volpath = File.realpath(vol_.path)
-            raise unless File.exist?(volpath)
+          volpath = File.realpath(vol_.path)
+          raise unless File.exist?(volpath)
 
-            if v.name == :auto
-              volname = File.basename(volpath) # XXX
-            else
-              volname = v.name
-            end
-            
-            voldir = File.join(resdir, volname)
-            raise "Already exists: `#{voldir}'. Aborting." if File.exist?(voldir)
-            Dir.mkdir(voldir)
-            
-            vollog_filename = "#{voldir}.log"
-            volmeta_filename = "#{voldir}.meta"
-
-            File.open(volmeta_filename, 'a') do |f|
-              f.puts(" mounted like #{%x{mount -l | grep #{volpath}}}")
-              f.puts(" used like #{%x{df #{volpath}}} (#{%x{df -h #{volpath}}}), #{%x{df -i #{volpath}}}")
-            end
-
-
-            # TODO take care of symlinks
-            
-            open("|find \"#{volpath}\" -print0") do |findstream|
-              findstream.each("\0") do |file|
-
-                # TODO check if file already exists in the most recent backup of resource
-                #       `-> check if file modification date changed
-                #       `-> if not changed: write only file metadata changes (if any) or write no-change note to metadata record
-                
-                if (file.ignore?)
-                  # TODO log I
-                else
-                  repo.add(file)
-                end
-                           
-              end # each file found
-              
-            end # findstream
-            
-          end # volume
+          if v.name == :auto
+            volname = File.basename(volpath) # XXX
+          else
+            volname = v.name
+          end
           
-        end # resource with volumes
+          voldir = File.join(resdir, volname)
+          raise "Already exists: `#{voldir}'. Aborting." if File.exist?(voldir)
+          Dir.mkdir(voldir)
+          
+          vollog_filename = "#{voldir}.log"
+          volmeta_filename = "#{voldir}.meta"
+
+          File.open(volmeta_filename, 'a') do |f|
+            f.puts(" mounted like #{%x{mount -l | grep #{volpath}}}")
+            f.puts(" used like #{%x{df #{volpath}}} (#{%x{df -h #{volpath}}}), #{%x{df -i #{volpath}}}")
+          end
+
+
+          # TODO take care of symlinks
+          
+          open("|find \"#{volpath}\" -print0") do |findstream|
+            findstream.each("\0") do |file|
+
+              # TODO check if file already exists in the most recent backup of resource
+              #       `-> check if file modification date changed
+              #       `-> if not changed: write only file metadata changes (if any) or write no-change note to metadata record
+              
+              if (file.ignore?)
+              # TODO log I
+              else
+                repo.add(file)
+              end
+              
+            end # each file found
+            
+          end # findstream
+          
+        end # volume
         
       end # resource
 
