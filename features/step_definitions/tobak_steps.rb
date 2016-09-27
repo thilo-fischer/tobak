@@ -10,10 +10,14 @@
 # directories being removed or created). Thier typical applications is
 # to be used in the `Given' and `When' part of the scenarios.
 
+# FIXME enable running cucumber without previous environment variable adaption, then remove this "debugging" step definition
 When(/^the PATH and LIB_DIR variables get printed$/) do
   puts "PATH: #{ENV['PATH']}"
   puts "LIB_DIR: #{LIB_DIR}"
 end
+
+
+# Background: Setup variables with path information
 
 Given(/^the testing repositories' root will be "([^"]*)"$/) do |repo_root|
   @repo_root = repo_root
@@ -43,6 +47,9 @@ Given(/^the virtual resource has these volumes:$/) do |table|
   @volumes[@recent_resource] = res_vols
 end
 
+
+# Conditions (XXX right word?)
+
 Given(/^an empty test repository directory$/) do
   #Dir.entries(@repo_root).empty?
   if Dir.exist?(@repo_root)
@@ -54,7 +61,7 @@ end
 Given(/^a fresh target repository$/) do
   steps %Q(
     Given an empty test repository directory
-    When I successfully run `tobak --destination="#{@destination}"`
+    When I run tobak for the test repository with arguments ""
   )
 end
 
@@ -98,6 +105,22 @@ Given(/^the directory contains$/) do |table|
     end # type
   end # each row
 end
+
+
+# Actions (XXX right word?)
+
+When(/^I run tobak for the test repository with arguments "([^"]*)"$/) do |args|
+  step %Q(I successfully run `tobak --destination="#{@repo_root}" #{args}`)
+end
+
+When(/^I run tobak for the test repository with arguments$/) do |table|
+  # table is a Cucumber::Core::Ast::DataTable
+  args = table.hashes.map? { |row| %Q("#row") }.join(" ")
+  step %Q(I successfully run `tobak --destination="#{@repo_root}" #{args}`)
+end
+
+
+# Expectations (XXX right word?)
 
 Then(/^a file named "([^"]*)" shall exist$/) do |path|
   @recent_file = path

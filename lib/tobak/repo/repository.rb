@@ -12,7 +12,9 @@
 # You should have received a copy of the GNU General Public License
 # along with tobak.  If not, see <http://www.gnu.org/licenses/>.
 
-  require 'fileutils'
+require 'fileutils'
+require 'yaml'
+require 'tobak/misc/helper'
 
 module Tobak::Repo
 
@@ -21,7 +23,7 @@ module Tobak::Repo
     attr_reader :path
 
     def initialize(path)
-      @path = Tobak::Helpers::with_final_separator(path)
+      @path = Tobak::Helpers.with_final_separator(path)
     end
 
     def add(file)
@@ -46,8 +48,8 @@ module Tobak::Repo
 
     def meta
       {
-        :setup_date => Time.new
-        :tobak_version => Tobak.VERSION
+        :setup_date => Time.new,
+        :tobak_version => Tobak::VERSION,
       }
     end
 
@@ -94,12 +96,12 @@ module Tobak::Repo
     ##
     # setup tobak repository at the given directory
     def setup
-      raise unless File.directory?(@path)
+      raise "`#{@path}' is not a directory." unless File.directory?(@path)
       FileUtils.mkdir(resources_dir_path)
       FileUtils.mkdir(hashes_dir_path)
       FileUtils.mkdir(sessions_dir_path)
       
-      File.open(meta_file_path) do |f|
+      File.open(meta_file_path, "a") do |f|
         f.puts(meta.to_yaml)
       end
     end
@@ -110,7 +112,7 @@ module Tobak::Repo
         File.directory?(hashes_dir_path) and
         File.directory?(sessions_dir_path) and
         File.exist?(meta_file_path) and
-        YAML.load(File.XXX.read(meta_file_path))[:tobak_version] == Tobak.VERSION
+        YAML.load(File.read(meta_file_path))[:tobak_version] == Tobak::VERSION
     end
 
   end # class Repository

@@ -20,6 +20,7 @@
 require 'singleton'
 
 require 'tobak/session/session'
+require 'tobak/repo/repository'
 
 ##
 # Things related to the currently running program instance.

@@ -22,7 +22,7 @@ module Tobak::Helpers
     ##
     # If +path+ ends with +File::SEPARATOR+, return content of +path+;
     # otherwise, return +path+ with appended +File::SEPARATOR+.
-    def with_final_separator(path)
+    def self.with_final_separator(path)
       File.join(path, "")
     end
 

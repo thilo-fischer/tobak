@@ -40,7 +40,8 @@ module Tobak::Ui
   # Parses the command line arguments passed to the tobak program at invocation
   class CommandLineParser
 
-    attr_reader :arguments
+    # XXX query options through explicit getter methods instead of direct hash access
+    attr_reader :destination, :options, :arguments
 
     def initialize
       @destination = nil

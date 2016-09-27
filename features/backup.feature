@@ -13,14 +13,15 @@ Feature: File Backup
       | volume_name |
       | volume01    |
       | volume02    |
+      And the PATH and LIB_DIR variables get printed
 
-@announce-cmd
+#@announce-cmd
 @announce-stdout
 @announce-stderr
 
   Scenario: Create repository
     Given an empty test repository directory
-    When I successfully run `tobak --destination="#{@destination}"`
+    When I run tobak for the test repository with arguments ""
     Then these directories shall exist
       | dir_name     |
       | resources    |
@@ -40,7 +41,12 @@ Feature: File Backup
       #| file_name   | owner | permissions | content
       | file_name   | content      |
       | file01.txt | Hello World! |
-    When I successfully run `tobak --destination="#{@destination}" --tag=tag01 --resource-name=res01 --autoresroot file01.txt`
+    When I run tobak for the test repository with arguments
+      | argument                 |
+      | --tag=tag01              |
+      | --resource-name=res01    |
+      | --autoresroot            |
+      | file01.txt               |
     #And I remember the time when the program finishes
     Then a file named "resources/res01/tag01/content/file01.txt" shall exist
     And the file shall contain "Hello World!"

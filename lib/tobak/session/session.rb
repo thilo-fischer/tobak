@@ -43,21 +43,21 @@ module Tobak::Session
     end
 
     def setup
-      @meta_file_path = @repo.session_meta_path(@tag)
+      @meta_file_path = @repository.session_meta_path(@tag)
       if File.exist?(@meta_file_path)
         alt_tag_counter = 1
         while (File.exist?(@meta_file_path + "_" + alt_tag_counter.to_s))
           alt_tag_counter += 1
         end
         @tag = @tag + "_" + alt_tag_counter.to_s
-        @meta_file_path = @repo.session_meta_path(@tag)
+        @meta_file_path = @repository.session_meta_path(@tag)
       end
 
       File.open(@meta_file_path, "a") do |f|
         f.puts(meta.to_yaml)
       end
 
-      @log_file_path = @repo.session_log_path(@tag)
+      @log_file_path = @repository.session_log_path(@tag)
       raise if File.exist?(@log_file_path)
       @log_file = File.open(@log_file_path, "a")
 
