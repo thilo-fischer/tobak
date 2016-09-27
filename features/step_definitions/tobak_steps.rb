@@ -10,19 +10,37 @@
 # directories being removed or created). Thier typical applications is
 # to be used in the `Given' and `When' part of the scenarios.
 
+When(/^the PATH and LIB_DIR variables get printed$/) do
+  puts "PATH: #{ENV['PATH']}"
+  puts "LIB_DIR: #{LIB_DIR}"
+end
+
 Given(/^the testing repositories' root will be "([^"]*)"$/) do |repo_root|
   @repo_root = repo_root
   Dir.exist?(File.basename(@repo_root))
 end
 
 Given(/^a virtual resource "([^"]*)" can be found at "([^"]*)"$/) do |res_name, res_path|
+  @resources ||= {}
   @resources[res_name] = res_path
+  @recent_resource = res_name
+  Dir.exist?(res_path)
   # TODO ensure res_path is a mountpoint
 end
 
 Given(/^the virtual resource has these volumes:$/) do |table|
   # table is a Cucumber::MultilineArgument::DataTable
-  # TODO
+  @volumes ||= {}
+  res_vols = []
+  res_path = @resources[@recent_resource]
+  table.hashes.all? do |row|
+    vol_name = row["volume_name"]
+    res_vols << vol_name
+    vol_path = File.join(res_path, vol_name)
+    Dir.exist?(vol_path)
+    # TODO ensure @resources[@recent_resource]/row[volume_name] is a mountpoint
+  end # each row
+  @volumes[@recent_resource] = res_vols
 end
 
 Given(/^an empty test repository directory$/) do
@@ -30,7 +48,7 @@ Given(/^an empty test repository directory$/) do
   if Dir.exist?(@repo_root)
     FileUtils.rm_r(@repo_root)
   end
-  Dir.mkdir_p(@repo_root)
+  FileUtils.mkdir_p(@repo_root)
 end
 
 Given(/^a fresh target repository$/) do
