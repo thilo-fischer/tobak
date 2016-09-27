@@ -4,11 +4,7 @@ Feature: File Backup
   I want to have copies of all my personal files from several resources in a common backup repository
   So I can easily backup and archive my data in a central place without much redundancy
 
-#@announce-cmd
-#@announce-stdout
-#@announce-stderr
-
-  Scenario: FIXME Background:
+  Background:
     Given the testing repositories' root will be "/tmp/tobak-test/repo-root"
     And a virtual resource "resource01" can be found at "/tmp/tobak-test/resource01"
     And a virtual resource "resource02" can be found at "/tmp/tobak-test/resource02"
@@ -17,6 +13,10 @@ Feature: File Backup
       | volume_name |
       | volume01    |
       | volume02    |
+
+@announce-cmd
+@announce-stdout
+@announce-stderr
 
   Scenario: Create repository
     Given an empty test repository directory
