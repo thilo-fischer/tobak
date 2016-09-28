@@ -52,7 +52,8 @@ module Tobak::Session
         @tag = @tag + "_" + alt_tag_counter.to_s
         @meta_file_path = @repository.session_meta_path(@tag)
       end
-
+      FileUtils.mkdir(File.dirname(@meta_file_path)) # XXX smells (but only a little): strip off basename from just joined path string
+      
       File.open(@meta_file_path, "a") do |f|
         f.puts(meta.to_yaml)
       end

@@ -75,11 +75,11 @@ module Tobak::Repo
     end
 
     def session_meta_path(tag)
-      File.join(sessions_dir, tag, "meta")
+      File.join(sessions_dir_path, tag, "meta")
     end
     
     def session_log_path(tag)
-      File.join(sessions_dir, tag, "log")
+      File.join(sessions_dir_path, tag, "log")
     end
     
     def meta_file_path

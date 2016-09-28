@@ -41,7 +41,7 @@ module Tobak::Ui
   class CommandLineParser
 
     # XXX query options through explicit getter methods instead of direct hash access
-    attr_reader :destination, :options, :arguments
+    attr_reader :destination, :resources, :options, :arguments
 
     def initialize
       @destination = nil

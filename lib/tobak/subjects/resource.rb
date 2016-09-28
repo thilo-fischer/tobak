@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with tobak.  If not, see <http://www.gnu.org/licenses/>.
 
+require 'tobak/subjects/subject'
+
 module Tobak::Subjects
 
-  class Resource
+  class Resource < Subject
     attr_reader :name, :description
     def initialize(name, description = nil)
       @name = name
