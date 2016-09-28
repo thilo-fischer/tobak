@@ -46,7 +46,7 @@ Feature: File Backup
       | --tag=tag01              |
       | --resource-name=res01    |
       | --autoresroot            |
-      | file01.txt               |
+      | resource01/file01.txt    |
     #And I remember the time when the program finishes
     Then a file named "resources/res01/tag01/content/file01.txt" shall exist
     And the file shall contain "Hello World!"
@@ -64,9 +64,9 @@ Feature: File Backup
       | errors    | true     |                        |
       | summary   | false    | 1 new files            |
     And the directory shall contain a symlink "session" to "sessions/tag01/log"
-    And a file named "hashes/*/*/*/file" shall exist
+    And a file named "hashes/*/*/*/file" shall exist # XXX checksum
     And the file shall contain "Hello World!"
-    And the file shall be identical to "resources/res01/tag01/content/file01.txt"
+    And the file shall be identical to "resources/res01/tag01/content/file01.txt" # XXX hardlink
     And a file named "hashes/*/*/*/instances" shall exist
     And the file shall contain "res01/tag01//file01.txt"
     And a directory named "sessions/tag01/resources" shall exist
@@ -78,6 +78,28 @@ Feature: File Backup
     And the file shall contain "finished.*#{Date.year}"
 
   Scenario: Add identical file twice form different resources
+    Given a fresh target repository
+    And a clean recource directory "resource01"
+    And the directory contains
+      | file_name      | content      |
+      | file01_r01.txt | Hello World! |
+    And a clean recource directory "resource02"
+    And the directory contains
+      | file_name      | content      |
+      | file01_r02.txt | Hello World! |
+    When I run tobak for the test repository with arguments
+      | argument                   |
+      | --tag=tag01                |
+      | --resource-name=res01      |
+      | --autoresroot              |
+      | resource01/file01_r01.txt  |
+    And I run tobak for the test repository with arguments
+      | argument                   |
+      | --tag=tag01                |
+      | --resource-name=res01      |
+      | --autoresroot              |
+      | resource02/file01_r02.txt  |
+  # FIXME Then ...
 
   Scenario: Add two files with same content (but different file attributes) from different resources
 
