@@ -2,30 +2,34 @@
 
 tobak is a tool for backing up files which are distributed (redundantly) over several resources.
 
-Most computer users today have to deal with their data being distributed among several devices, e.g. the PC they use at home, the laptop they use when traveling, an old PC they used a few years ago, their smartphone, the feature phone they used before, the tablet PC they use when sitting on the couch and surfing the internet, a media PC connected to their TV screen, possibly the PC they use at work (if there is data "belonging" to the user, and not only "his company's" data), an USB hard disc used for sporadic backups, another one for photos and videos, a dozen USB sticks used to move data form one device to the other, a SD card within the camera, a SD card full with photos to be moved to the picture collection (on the PC and on the USB hard disc), and so on.
+## Overview
 
-Cloud services are a fine way to synchronize some of your data between these devices various devices. But they can be used only for parts of your data and you must but some effort in synchronizing the data stored locally on the devices with the data stored in the cloud.
+### Use Case
 
-You *could* store *all* of your data *only* in the cloud (*only* in the cloud, not locally on your devices, such that you don't have to care about device/cloud synchronization) given that
+Most computer users today have to deal with their data being distributed among several devices, e.g. the PC they use at home, the laptop they use when traveling, an old PC they used a few years ago, their smartphone, the feature phone they used before, the tablet PC they use when sitting on the couch and surfing the internet, a media PC connected to their TV screen, possibly the PC they use at work (if there is data "belonging" to the user, and not only "his company's" data), an USB hard disc used for sporadic backups, another one for photos and videos, a dozen USB sticks used to move data form one device to the other, a SD card within the camera, a SD card full with photos to be moved to the picture collection (on the PC or on the USB hard disc), and so on and so on ...
+
+Cloud services are a fine way to synchronize some of your data between these devices various devices. But they can be used only for parts of your data and you must put some effort in synchronizing the data stored locally on the devices with the data stored in the cloud.
+
+You *could* store *all* of your data *only* in the cloud given that
 - you trust the cloud service provider's confidentiality sufficiently to copy all your personal data to the cloud,
 - you trust the cloud service provider's reliability sufficiently to copy all your personal data to the cloud (they will very likely have a far better data redundancy and backup strategy than you can establish on your own, but what is the cloud service runs out of business?),
 - the cloud service provides sufficient storage space for all you data,
 - you have enough bandwidth to store and access all your data form the cloud and
 - you always have access to the cloud (or have according "offline" mechanisms installed) when you need to access your data.
 
-Some of these issues could be addressed by setting up a private cloud service (e.g. https://en.wikipedia.org/wiki/OwnCloud). Still, I don't want to store a lot of my data exclusively in the cloud, I prefer to have most of my data stored locally on some device I own and can access.
+Some of these issues could be addressed by setting up a private cloud service (e.g. https://en.wikipedia.org/wiki/OwnCloud). Still, I don't want to store a lot of my data exclusively in the cloud, I prefer to have most of my data stored locally on some device I own and can access physically.
 
-tobak is a tool for aggregating data from various resources (computers, smartphones, hard drives, usb sticks, sd cards, etc.) into one single large backup repository. This repository could be located e.g. on a large externel hard disc or on a NAS system. For each resource backed up in the repository and each backup session, a separate directory exists where all files form the resource can be found a the directory tree matching the resource's directory tree when running the backup. If two files with the same content are added to the backup repository, tobak uses hard links to present the file in different directory trees while allocation only once storage space for the file content. Files distributed redundantly over several resources can thus be aggregated efficiently on a single backup resource. Also, multiple backups of the same resource at diffent points in time can be stored in the repository very efficiently as only the changed files require additional storage space.
+tobak is a tool for aggregating data from various resources (computers, smartphones, hard drives, usb sticks, sd cards, etc.) into one single large backup repository. This repository can be located e.g. on a large externel hard disc or on a NAS system. For each resource backed up in the repository and each backup session, a separate directory exists where all files form the resource can be found in an directory tree matching the resource's directory tree at the point in time when the backup was done. If two files with the same content are added to the backup repository, tobak uses hard links to present the file in different directory trees while allocating only once storage space for the file content. Files distributed redundantly over several resources can thus be aggregated efficiently on a single backup resource. Also, multiple backups of the same resource at diffent points in time can be stored in the repository very efficiently as only the changed files require additional storage space.
 
-Note: tobak neither deals with confidentiality nor reliability of the backup repository (following the Unix DOTADIW principle). Take care to encrypt the device that holds your backup repository and to regularly copy the repository to a redundant medium.
+### Scope
 
----
+It is important to note which aspects of data backup are covered by tobak and which are not: tobak neither deals with confidentiality nor reliability of the backup repository (following the Unix DOTADIW principle). Take care to encrypt the device that holds your backup repository and to regularly copy the repository to a redundant medium.
 
-The name tobak indicates that the command is used to add files *to* your *ba*c*k*up repository. Its not to honor smoking (see https://en.wikipedia.org/wiki/Health_effects_of_tobacco).
+### Naming
 
----
+The name tobak indicates that the command is used to add files *to* your *ba*c*k*up repository. Its not to honor smoking (see https://en.wikipedia.org/wiki/Health_effects_of_tobacco). 
 
-# License
+## License
 
 Copyright (c) 2016  Thilo Fischer
 
@@ -43,3 +47,37 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with tobak.  If not, see <http://www.gnu.org/licenses/>.
+
+## Repository
+
+tobak backs up data into a directory with a specific folder structure. This backup target directory is called the tobak *repository*.
+
+### Requirements
+
+Usage of hard links is mandatory for tobaks working principle. A tobak repository can only be created on a file system that supports hard link. This is true for most Unix file systems and tobak should work fine with a repository un such file system. Hard links are supported but rather uncommon on NTFS file systems -- so no guarantee whether tobak will work properly when the repository is located on a NTFS partition. FAT32 filesystems for example do not support hard links at all and repositories on such partitions are not supported.
+
+### Layout
+
+A repository consists of these files and directories:
+
+* Directory +volumes+
+  We use the term *volume* to refer to an entity that contains or is represented as a file system: hard disk partitions, (partitions on) USB flash drives and SD Cards, CD-ROMs, network shares, etc. When files from such volume are added to the tobak repository, the directory structure of that volume will be reflected in the tobak repository. The backed up file's and directory's meta data will be reflected in the repository as well.
+  
+  Every volume form where files are added to the repository will have a specific directory inside the +volume+ directory (one for every backup session). This volume specific directory contains subdirectories +content+ and +cmeta+ which contain a directory hierarchy that reflects the directory hierarchy found on the volume. The files in +content+ contain the content of the files from the volume, the files in +cmeta+ contain meta information on these files.
+
+  The volume specific directory also contains a +meta+ file with meta information on the specific volume and a +log+ directory containing several log files form the backup procedure that integrated the files form that volume into the repositroy.
+
+  A volume specific directory may be nested in an arbitrary directory hierarchy within the +volumes+ directory. I.e. a volume directoy +my_volume+ may be located at +$REPO/volumes/my_volume+ or e.g. at +$REPO/volumes/foo/bar/baz/my_volume+. This hierarcy can be used to group volumes, e.g. group volumes form on hard drive of your desktop PC and from the other hard drive of it and then group these with the harddrive volume group of you laptop, e.g.: +$REPO/volumes/my_computers/desktop/data_hdd/partition0+. Or it can be used to group all backups from the CD-ROMs you used to archive your photos, e.g.: +$REPO/volumes/cdrom/photo_archive/2010-01+.
+
+  Every backup session creates a new directory for every volume backed up. This way, you can keep the info of how the volume looked at different dates. Each backup session is assigned a *tag* specific to that session that identifies the directories created in that session. The common form of a tag is the date (and possibly time) of the backup session like 2016-12-31, but in could be any string that is a valid filename. Tagging the session adds another level to the directory struture in volumes, but where this level is added can be group specific and you can define it depending on your use case. Files may be backed up in e.g. +$REPO/volumes/foo/bar/baz/my_volume/2016-12-13/content+, +$REPO/volumes/foo/bar/2016-12-13/baz/my_volume+ or +$REPO/volumes/2016-12-13/foo/bar/baz/my_volume+. If not specified otherwise, the session tag directory will be a subdirectory of the volume specific directory.
+
+
+
+  Contains all backed up files in a directory structure comparable to that from where the files have been copied. Any entity that contains or is represented as a file system can be considered a volume: hard disk partitions, (partitions on) USB flash drives and SD Cards, CD ROMs, network shares, etc. The files found on such volume will be copied into a subdirectory of the +volumes+ directory associated with that a specific volume, re... the directory structure found on the original volume.
+  directory A directory associated with a specific volume may be nested arbitraritly in a directory structure representing catrgorization of the volumes. E.g. all hard disc drives of one PC may be grouped in a directory accociated with that PC, all partitions of one of the harddisks may be grouped in a directory accosiated with that harddisk.
+  may be nested arbitrarily  The directory trees are arranged in subdirectories according to the resource and the volume backed up and the backup session: XXX  
+* Directory +hashes+
+  For each file content represented in the repository, one directory is created in here named after the file's content's SHA1 hash. (To avoid having too many files in one directory, the hashes directory contains two levels of subdirectories representing the first and second SHA1 digit and the third and fourth SHA1 digit.) The file content specific directory contains two files: +file+ which contains the file's content and +instances+ which contains all paths in the resources directory that refer to files with the given content.
+* dirceotry +sessions+
+* File +meta+
+  Contains meta data on the repository, e.g. date of repository creation, compatibility version number of the tobak repository, version number of the tobak program version that the repository is compatible to (which is the tobak version that created the repository initially or that upgraded the repository from a previous to a more recent compatibility version).
