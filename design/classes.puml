@@ -24,7 +24,7 @@ class Repository {
   + description
 }
 
-Session --> 1 Repository : repository
+Session --> "1" Repository : repository
 
 class Subject {
   + integrate_into(r : Repository)
@@ -47,7 +47,7 @@ class Volume {
 }
 
 Subject --|> Volume
-Volume 1 --> 1 Resource : Parent
+Volume "1" --> "1" Resource : Parent
 
 class File {
   + path()
@@ -58,6 +58,6 @@ class File {
 }
 
 Subject --|> File
-File 1 --> 1 Volume : Parent
+File "1" --> "1" Volume : Parent
 
 @enduml
