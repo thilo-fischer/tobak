@@ -1,7 +1,7 @@
 # Steps containing the word "shall" usually define steps that just
 # observe and test current conditions. They usually don't have any
 # side effects (appart from setting scenario-local variables to chain
-# several of these steps). Thier typical applications is to be used in
+# several of these steps). Their typical applications is to be used in
 # the `Then' part of the scenarios.
 #
 # Steps not containing the word "shall" usually define steps that take
@@ -19,39 +19,14 @@ end
 
 # Background: Setup variables with path information
 
-Given(/^the testing repositories' root will be "([^"]*)"$/) do |repo_root|
+Given(/^the test repositories' shall be created as "([^"]*)"$/) do |repo_root|
   @repo_root = repo_root
   Dir.exist?(File.basename(@repo_root))
 end
 
-Given(/^a virtual resource "([^"]*)" can be found at "([^"]*)"$/) do |res_name, res_path|
-  @resources ||= {}
-  @resources[res_name] = res_path
-  @recent_resource = res_name
-  Dir.exist?(res_path)
-  # TODO ensure res_path is a mountpoint
-end
-
-Given(/^the virtual resource has these volumes:$/) do |table|
-  # table is a Cucumber::MultilineArgument::DataTable
-  @volumes ||= {}
-  res_vols = []
-  res_path = @resources[@recent_resource]
-  table.hashes.all? do |row|
-    vol_name = row["volume_name"]
-    res_vols << vol_name
-    vol_path = File.join(res_path, vol_name)
-    Dir.exist?(vol_path)
-    # TODO ensure @resources[@recent_resource]/row[volume_name] is a mountpoint
-  end # each row
-  @volumes[@recent_resource] = res_vols
-end
-
-
-# Conditions (XXX right word?)
+# Pre-Conditions (XXX right word?)
 
 Given(/^an empty test repository directory$/) do
-  #Dir.entries(@repo_root).empty?
   if Dir.exist?(@repo_root)
     FileUtils.rm_r(@repo_root)
   end
@@ -61,23 +36,8 @@ end
 Given(/^a fresh target repository$/) do
   steps %Q(
     Given an empty test repository directory
-    When I run tobak for the test repository with arguments ""
+    When I run tobak for the test repository with arguments "--init-repo"
   )
-end
-
-#Given(/^a clean recource directory "([^"]*)"$/) do |res_dir|
-#  # strip the leading resource identifier from res_dir
-#  @recent_resname = res_dir.slice!(/\w+\//)
-#  @recent_resname.chop! # strip trailing '/'
-#  path = File.join(@resources[res_name], res_dir)
-#  
-#end
-
-Given(/^a clean recource directory "([^"]*)"$/) do |resname|
-  @recent_resname = resname
-  @recent_dir = @resources[@recent_resname]
-  Dir.exist?(@recent_dir)
-  Dir.entries(@recent_dir).empty?
 end
 
 Given(/^the directory contains$/) do |table|
@@ -110,52 +70,39 @@ end
 # Actions (XXX right word?)
 
 When(/^I run tobak for the test repository with arguments "([^"]*)"$/) do |args|
-  step %Q(I successfully run `tobak --destination="#{@repo_root}" #{args}`)
+  step %Q(I successfully run `tobak --repo="#{@repo_root}" #{args}`)
 end
 
 When(/^I run tobak for the test repository with arguments$/) do |table|
   # table is a Cucumber::Core::Ast::DataTable
   args = table.hashes.map? { |row| %Q("#row") }.join(" ")
-  step %Q(I successfully run `tobak --destination="#{@repo_root}" #{args}`)
+  step %Q(I successfully run `tobak --repo="#{@repo_root}" #{args}`)
 end
 
 
 # Expectations (XXX right word?)
 
-Then(/^a file named "([^"]*)" shall exist$/) do |path|
-  @recent_file = path
+## File
+
+Then(/^in the repository a file named "([^"]*)" shall exist$/) do |path|
+  @recent_file = File.join(@repo_root, path)
   #File.exist?(path)
-  File.file?(path)
+  File.file?(@recent_file)
 end
 
 Then(/^the file shall contain "([^"]*)"$/) do |content|
   content == File.read(@recent_filename)  
 end
 
-Then(/^a directory named "([^"]*)" shall exist$/) do |path|
-  @recent_dir = path
-  Dir.exist?(path)
+Then(/^the file shall be identical to "([^"]*)"$/) do |other_file|
+  File.read(@recent_file) == File.read(File.join(@repo_root, other_file))
 end
 
-Then(/^these directories shall exist$/) do |table|
-  # table is a Cucumber::Core::Ast::DataTable
-  table.hashes.all? do |row|
-    path = File.join(@repo_root, row[dir_name])
-    next false if not Dir.exist?(path)
-    if row.key?("empty")
-      case row["empty"]
-      when ""
-        nil
-      when /^true$/i, "t"
-        next false if not Dir.entries(path).empty?
-      when /^false$/i, "f"
-        next false if Dir.entries(path).empty?
-      else
-        raise
-      end
-    end
-    # ...
-  end
+## Directory
+
+Then(/^in the repository a directory named "([^"]*)" shall exist$/) do |path|
+  @recent_dir = File.join(@repo_root, path)
+  Dir.exist?(@recent_dir)
 end
 
 Then(/^the directory shall contain a file "([^"]*)"$/) do |filename|
@@ -228,6 +175,25 @@ Then(/^the directory shall contain$/) do |table|
   end
 end
 
-Then(/^the file shall be identical to "([^"]*)"$/) do |other_file|
-  File.read(@recent_file) == File.read(other_file)
+## Directories
+
+Then(/^in the repository these directories shall exist$/) do |table|
+  # table is a Cucumber::Core::Ast::DataTable
+  table.hashes.all? do |row|
+    path = File.join(@repo_root, row[dir_name])
+    next false if not Dir.exist?(path)
+    if row.key?("empty")
+      case row["empty"]
+      when ""
+        nil
+      when /^true$/i, "t"
+        next false if not Dir.entries(path).empty?
+      when /^false$/i, "f"
+        next false if Dir.entries(path).empty?
+      else
+        raise
+      end
+    end
+    # ...
+  end
 end
