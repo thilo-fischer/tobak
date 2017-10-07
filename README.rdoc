@@ -1,6 +1,6 @@
 # tobak
 
-tobak is a tool for backing up files which are distributed (redundantly) over several resources.
++tobak+ is a tool for backing up files which are distributed (redundantly) over several resources.
 
 ## Overview
 
@@ -23,9 +23,9 @@ Some of these issues could be addressed by setting up a private cloud service (e
 
 +tobak+ is a tool for aggregating data from various resources (computers, smartphones, hard drives, usb sticks, sd cards, etc.) into one single large backup repository. This repository can be located e.g. on a large externel hard disc or on a NAS system. For each resource backed up in the repository and each backup session, a separate directory exists where all files form the resource can be found in an directory tree matching the resource's directory tree at the point in time when the backup was done. If two files with the same content are added to the backup repository, tobak uses hard links to present the file in different directory trees while allocating only once storage space for the file content. Files distributed redundantly over several resources can thus be aggregated efficiently on a single backup resource. Also, multiple backups of the same resource at diffent points in time can be stored in the repository very efficiently as only the changed files require additional storage space.
 
-tobak's main purpose is to backup and aggregate user data. It does so in a transparent but (wrt. storage space) efficient way. The backup repository is set up in a way that access to single files as well as access to a representation of complete backed-up volume is rather simple and straight forward. No data is stored in complex data bases where you need specialized tools to access the contained data, all data storage is file system based and meta data is sotred in human-readable text files (JSON/YAML).
++tobak+'s main purpose is to backup and aggregate user data. It does so in a transparent but (wrt. storage space) efficient way. The backup repository is set up in a way that access to single files as well as access to a representation of complete backed-up volume is rather simple and straight forward. No data is stored in complex data bases where you need specialized tools to access the contained data, all data storage is file system based and meta data is sotred in human-readable text files (JSON/YAML).
 
-tobak focusses on backing up content, and on backing up user data. You can also use is to back up complete "images" of computers' files systems with operating system installations, its configuration, installed software and contained user data (no boot sector). But tobak does not (yet) provide tools to automatically completely restore backed up file systems such that you could reliably reset a computer to a backed up state completely. (You can restore a lot with just a plain (recursive) file copy form the backup respsitory to the target system, but e.g. file permissions and other file meta data wouldn't get restored.)
++tobak+ focusses on backing up content, and on backing up user data. You can also use is to back up complete "images" of computers' files systems with operating system installations, its configuration, installed software and contained user data (no boot sector). But tobak does not (yet) provide tools to automatically completely restore backed up file systems such that you could reliably reset a computer to a backed up state completely. (You can restore a lot with just a plain (recursive) file copy form the backup respsitory to the target system, but e.g. file permissions and other file meta data wouldn't get restored.)
 
 ### Scope
 
@@ -56,12 +56,23 @@ along with tobak.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Nomenclature
 
-### Volumes
-We use the term *volume* to refer to an entity that contains or is represented as a file system: partitions on hard disk/solid state drives, USB flash drives and SD Cards, CD-ROMs, network shares, etc. When files from such volume are added to the tobak repository, the directory structure of that volume will be reflected in the tobak repository. The backed up file's and directory's meta data will be reflected in the repository as well.
-
-## Repository
+### Repository
 
 tobak backs up data into a directory with a specific folder structure. This backup target directory is called the tobak *repository*.
+
+### Volumes
+
+We use the term *volume* to refer to an entity that contains or is represented as a file system: partitions on hard disk/solid state drives, USB flash drives and SD Cards, CD-ROMs, network shares, etc. When files from such volume are added to the tobak repository, the directory structure of that volume will be reflected in the tobak repository. The backed up file's and directory's meta data will be reflected in the repository as well.
+
+### Resources
+
+If several volumes are associated with each other because they are contained in some greater entity or system, we may call this greater entity or system a *resource*. The usual example for what we consider a resource here would be a computer system: It contains at least one, but often multiple volumes like multiple drive partitions on possibly multiple drives. It makes sense to consider this resource a collection of associales volumes rather than a set of indenpendent volumes because data on one of these volumes may have semantical dependencies to data on another volume.
+
+### Session
+
+Every run of the +tobak+ tool is considered a *session*. +tobak+ supports to store multiple versions of a backed up volume, and every version is identified by the *session* which added that version to the repository. A session is identified by and represented through a *tag* (which is typically a reprenestation of the session's date like 2016-12-31, but could be any string that is a valid filename). If several invokations of the +tobak+ executable share the same tag string, they will be considered to run the same session.
+
+## Repository
 
 ### Requirements
 
@@ -69,28 +80,74 @@ Usage of hard links is mandatory for tobaks working principle. A tobak repositor
 
 ### Layout
 
-A repository is a specifically organized set of files and directories. All of the repository is located in subdirectories of the repositories *top level directory*. The top level directory can be any direcotry nested arbitrarily deep in a file systems directory hierarchy, but it is recommended to choose a directory not nested deeply (to keep file paths shorter), preferably the root directory of the backup volume's file system. In the following we will use +$REPO+ to refer to the repositories top level directory.
+A repository is a specifically organized set of files and directories. All of the repository is located in subdirectories of the repositories *top level directory*. The top level directory can be any direcotry nested arbitrarily deep in a file systems directory hierarchy, but it is recommended to choose a directory not nested deeply (to keep file paths shorter), preferably the root directory of the backup volume's file system.
+The name of the top level directory shall be +tobak-repo+ or any other name suffixed with +.tobak-repo+.
 
 The repository contains directories and files with specific names and functions, but also directories and files with user specified names and of course names that originate from the files backed up in the repository.
 - Reserved names and their meanings will be discussed individually below.
 - Names given by the user shall not interfere with names of directories or files that have a special meaning to tobak, thus some names are reserved. Apart from that, it is recommended for the user to choose names that are easy to handle, i.e. don't use special characters (apart from +-+ and +_+) in your names, chose names that don't contain spaces (or other whitespace characters). Even given that tobak handles complicated filenames right, working with the repository and using other tools or scripts on the repository would become more error prone.
 - Directories and files with names that originate from file systems backed up in the repository will be put into directories that contain only such files with no files with special meaning in tobak and no files with user defines names in it. Thus, name clashed will be avoided here.
 
-A repository consists of these files and directories:
+A repository consists files and directories as follows.
 
-* Directory +volumes+
-  The +volumes+ directory is probably the directory most relevant for the actual application of tobak. The user can give it an internal structure that reflects the meaning of the volumes backed up, configuration of the backup process can be set up through the volumes directory and representations of the volumes backed up in the repository can be found in here.
+#### Directory +volumes+
 
-  Every volume form which files are added to the repository will have specific directories inside the +volume+ directory (one for every backup session). The volume specific directories contain subdirectories +content+ and +cmeta+, both contain a directory hierarchy that reflects the directory hierarchy found on the volume. The files in +content+ contain the content of the files from the volume, the files in +cmeta+ contain meta information on these files.
+The +volumes+ directory is the directory most relevant to the user. The representations of the volumes backed up is found in here. It may have a user defined internal structure that reflects the meaning of the volumes backed up: related volumes can be grouped together in according directories, and meta and configuration data can be associated with volume groups. 
 
-  The volume specific directory also contains a +meta+ file with meta information on the specific volume and a +log+ directory containing several log files form the backup procedure that integrated the files form that volume into the repositroy.
+##### Volume specific directories
 
-  A volume specific directory may be nested in an arbitrary directory hierarchy within the +volumes+ directory. I.e. a volume directoy +my_volume+ may be located at +$REPO/volumes/my_volume+ or at e.g. +$REPO/volumes/foo/bar/baz/my_volume+. This hierarcy can be used to group volumes; e.g. group volumes form on hard drive of your desktop PC and from the other hard drive of it and then group these with the harddrive volume group of you laptop like: +$REPO/volumes/my_computers/desktop/system_hdd/partition0+, +$REPO/volumes/my_computers/desktop/data_hdd/partition0+, +$REPO/volumes/my_computers/desktop/data_hdd/partition1+, +$REPO/volumes/my_computers/laptop/hdd/partition0+. Or it can be used to group all backups from the CD-ROMs you used to archive your photos, e.g.: +$REPO/volumes/cdrom/photo_archive/2010-01+. Groups can be used to set up configuration options that will apply to all volumes in the given group or its subgroups.
+Every volume form which files are added to the repository will have specific directories inside the +volume+ directory (one for every backup session). Such directory may have an arbitrary user-defined name and a suffix +.vol+ (for *vol*ume) to make it recognizable as a volume directory. It contains subdirectories +content+ and +c_meta+, both contain a directory hierarchy that reflects the directory hierarchy found on the volume when doing the backup. The files in +content+ contain the content of the files from the volume, the files in +c_meta+ (for *c*ontent *meta*) contain meta information on these files.
 
-  Every backup session creates a new directory for every volume backed up. This way, you can keep the info of how the volume looked at different dates. Each backup session is assigned a *tag* specific to that session that identifies the directories created in that session. The common form of a tag is the date (and possibly time) of the backup session like 2016-12-31, but it could be any string that is a valid filename. Tagging the session adds another level to the directory struture of volumes, but where this level is added can be group specific and you can define it depending on your use case. Files may be backed up in e.g. +$REPO/volumes/foo/bar/baz/my_volume/2016-12-31/+, +$REPO/volumes/foo/bar/2016-12-31/baz/my_volume/+ or +$REPO/volumes/2016-12-31/foo/bar/baz/my_volume/+. If not specified otherwise, the session tag directory will be a subdirectory of the volume specific directory. If you back up at one session several associated volumes of a group it often makes sense to have a common tag directory, e.g. if you back up all partitions of your desktop computer's multiple hard disks, it makes much sense to have the tag directory in the common group directory of the desktop's harddisks like +$REPO/volumes/my_computers/desktop/TAG_2016-12-31/system_hdd/partition0+.
+The volume specific directory also contains a +meta+ file with meta information on the specific volume and a +log+ directory containing several log files form the backup procedure that integrated the files form that volume into the repositroy. It may also contain a +config+ file with configuration parameters that specify how tobak shall handle the according volume.
 
-* Directory +hashes+
-  For each file content represented in the repository, one directory is created in here named after the file's content's SHA1 hash. (To avoid having too many files in one directory, the hashes directory contains two levels of subdirectories representing the first and second SHA1 digit and the third and fourth SHA1 digit.) The file content specific directory contains two files: +file+ which contains the file's content and +instances+ which contains all paths in the resources directory that refer to files with the given content.
-* Dirceotry +sessions+
-* File +meta+
-  Contains meta data on the repository, e.g. date of repository creation, compatibility version number of the tobak repository, version number of the tobak program version that the repository is compatible to (which is the tobak version that created the repository initially or that upgraded the repository from a previous to a more recent compatibility version).
+Note: +content+, +c_meta+, +meta+ and +log+ won't be direct children of the volume specific direcotry, if this directory contains session-specific tag directories (see below).
+
+##### Directory hierarchy
+
+A volume specific directory may be nested in an arbitrary directory hierarchy within the +volumes+ directory. I.e. a volume directoy +my_volume+ may be located at +tobak-repo/volumes/my_volume+ or at e.g. +tobak-repo/volumes/foo/bar/baz/my_volume+. This hierarcy can be used to group volumes; e.g. group volumes form on hard drive of your desktop PC and from the other hard drive of it and then group these with the harddrive volume group of you laptop like: +tobak-repo/volumes/my_computers/desktop/system_hdd/partition0+, +tobak-repo/volumes/my_computers/desktop/data_hdd/partition0+, +tobak-repo/volumes/my_computers/desktop/data_hdd/partition1+, +tobak-repo/volumes/my_computers/laptop/hdd/partition0+. Or it can be used to group all backups from the CD-ROMs you used to archive your photos, e.g.: +tobak-repo/volumes/cdrom/photo_archive/2010-01+.
+
+The directory structure can be used to set up configuration options that will apply to a set of volumes: Each directory may contain a +config+ file that may contain (volume related) tobak configuration options. The options defined in such config file will be applied to all volumes contained in that directory (recursively). (Innermost configuration options dominate, i.e. if a child directory sets an option its parent directory already set differently, the child directory's option wins.)
+
+There are two special types of directories that my be used in the volumes subdirectory's hierarchy: Dirctories that decleare *volume groups*, and directories that define *resources*. The latter is just a special case of the first one. These directory's names will be suffixed with +.grp+ or +.res+ respectively. More on the meaning of volume groups and resources in a minute.
+
+Note: To distinct ordinary directories from volume group, resource, and volume directories their names shall neither end with +.grp+, +.res+ nor +.vol+.
+
+##### Session specific directories
+
+Every backup session may create additional, session-specific directories for the volumes backed up. This way, you can keep copies of the volume at different dates. Each backup session is assigned a *tag* specific to that session that identifies the directories created in that session. The common form of a tag is the date (and possibly time) of the backup session like 2016-12-31, but it could be any string that is a valid filename.
+Tagging the session adds another level to the directory struture of the +volumes+ directory. The seesion specific directory will have the suffix +.tag+.
+
+Where the addional level is inserted depends on the parent directories of the specific volume directory:
+- If none of the volume's ancestor directory (parent directory, grandparent directory, etc. up until +tobak-repo/volumes+) is a volume group or resource directory (+.grp+ or +.res+ suffix in directory name), the session specific directory will be created as a subdirectory of the volume directory, e.g. for +tobak-repo/volumes/foo/bar/baz/my_volume+ and a seesion with tag +2016-12-31+ a directory +tobak-repo/volumes/foo/bar/baz/my_volume/2016-12-31.tag+ will be created.
+- If the volume specific directory has (at least) one volume group or resource directory ancestor, the session specific directory will be created as a subdirectory of the outermost volume group or resource directory.
+
++tobak+ sessions may explicitly avoid to add session specific directories (which makes sense e.g. when you backup read-only volumes like CD-ROMs or finalized CD-Rs).
+
+##### Volume Groups and Resources
+
+If you back up several associated volumes in one session, it often makes sense to have a session specific directory common for all volumes, and not one session specific directory per volume as subdirectory of the volume specific directory. E.g. if you back up all partitions of your desktop computer's multiple hard disks, it makes much sense to have the tag directory in a common directory for all the desktop's harddisks like +tobak-repo/volumes/my_computers/desktop/2016-12-31.tag/system_hdd/partition0+. When you create volume group directories in the directory hierarchy below +tobak-repo/volumes+ all volumes contained in that directory (directly or recursivly) will share a common session specific directory.
+To add a volume group directory, create a directory and simply add the suffix +.grp+ to the directory name.
+
+A resource directory is a special volume group directory where there is some concrete entity that contains the volumes in the group and where additional meta data on that entity can be stored in the backup repository.
+To add a volume group directory, create a directory and simply add the suffix +.res+ to the directory name. (XXX?)
+
+An example when to use a resource directory is when the content of a computer system (as a collection of the volumes contained in that system) shall be backed up. Meta data on the resource may contain additional information on the computer system (e.g. which volumes are mounted where resp. which volumes have which drive letters).
+
+Resource directories will probably be the more common case than volume group directories because most real life examples for the usage of volume groups are better represented as resources.
+
+#### Directory +hashes+
+
+For each file content represented in the repository, one directory is created in here named after the file's content's SHA1 hash. (To avoid having too many files in one directory, the hashes directory contains two levels of subdirectories representing the first and second SHA1 digit and the third and fourth SHA1 digit.) The file content specific directory contains two files: +file+ which contains the file's content and +instances+ which contains all paths in the resources directory that refer to files with the given content.
+  
+#### Directory +sessions+
+
+Stores meta data and log files for +tobak+ sessions as well as symlinks to the session specific directories in the +volumes+ subdirectory hierarchy.
+For every session, a subdirectory of +sessions+ named as the session's tag will be created. These session specific subdirectories will have further subdirectories, one for every invokation of the +tobak+ execuable sharing that specific tag.
+
+#### File +meta+
+
+Contains meta data on the repository, e.g. date of repository creation, compatibility version number of the tobak repository, version number of the tobak program version that the repository is compatible to (which is the tobak version that created the repository initially or that upgraded the repository from a previous to a more recent compatibility version).
+
+#### File +config+
+
+Contains configuration options that apply to the tobak repository.
