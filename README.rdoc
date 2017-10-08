@@ -218,12 +218,12 @@ Please note that the order of the command line options is relevant: +--source+ m
 This will first add the volume to the repository (as described above) and then do a backup of the original volume in the repository.
 
 When adding another backup session of a volume already known to the repository, you may leave away
-- either the +--volume+ command line option and let +tobak+ determine the correct volume directory in the repository, which will generally work, but may fail in some situations due to ambiguities (+tobak+ will ask you then or state that the +--volume+ switch is mandatory in that situation),
+- either the argument to the +--volume+ command line option and let +tobak+ determine the correct volume directory in the repository, which will generally work, but may fail in some situations due to ambiguities (+tobak+ will ask you then or state that the argument to the +--volume+ switch is mandatory in that situation),
 - or the +--source+ command line option if it is still the same as it was the last time the volume was backed up (or as it was when the volume was added to the repository in case there has not been any backup made yet).
-It is suggested to rather leave away the +--source+ than the +--volumes+ command line option.
+It is suggested to rather leave away the +--source+ command line option than the argument to the +--volumes+ option.
 
 You can backup multiple volumes with one invokation of +tobak+ by giving multiple +--volume+/+--source+ command line option pairs.
-You may leave away +--volume+ or +--source+ options as before, as long as you don't leave away the +--source+ at one at the +--volume+ option at the following pair (which would lead to ambiguity: When doing so with e.g. +--volume=vol_a --source=src_a --volume=vol_b --source=src_b+ one gets +--volume=vol_a --source=src_b+ and +tobak+ must assume that +src_b+ shall be backed up as +vol_a+).
+You may leave away +--volume+'s argument or +--source+ options as before.
 
 You can also backup all volumes in a certain repository directory (if you can leave away +--source+ command line option for all these volumes) by running
  tobak --repo=<repo-top-level-directory> --vol-recurs=foo/bar

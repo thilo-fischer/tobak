@@ -25,121 +25,112 @@ require 'optparse'
 # User Interface Implementation
 module Tobak::Ui
 
-  class Resource
-    attr_accessor :name, :root, :comment, :volumes, :path
-    def initialize
-      @volumes = [ Volume.new ]
-    end
-  end
-
   class Volume
-    attr_accessor :name, :root, :comment, :path
+    attr_accessor :location, :source, :options
+    def initialize
+      @location = nil
+      @source = nil
+      @options = {}
+    end
   end
 
   ##
   # Parses the command line arguments passed to the tobak program at invocation
   class CommandLineParser
 
-    # XXX query options through explicit getter methods instead of direct hash access
-    attr_reader :destination, :resources, :options, :arguments
-
-    def initialize
-      @destination = nil
-      @options = {}
-      @resources = [ Resource.new ]
-    end
     
+    # XXX query options through explicit getter methods instead of direct hash access
+    attr_reader :repo, :volumes, :options, :arguments
 
+    
+    def initialize
+      @repo = nil
+      @options = {}
+      @volumes = []
+    end
+
+    
     def parse
       
       option_parser = OptionParser.new do |opts|
 
         opts.banner =
-          "Usage: #{File.basename $0} --destination=<path> [ --tag=<sessiontag> ] ( resource-options ( <path-to-resource> | ( volume-options <path-to-volume> ... ) ) ... )"
+          "Usage: #{File.basename $0} [ --repo=<path> ] ( --init-repo | [ --tag[=<sessiontag>] | --no-tag ] ( --volume=<path-in-repo> --source=<path> [volume-options] | --vol-recurs=<path-in-repo> | --resource=<path-in-repo> ) ... )"
 
         opts.separator ""
-      opts.separator "resource-options:"
-      opts.separator "( --resource-name=<name> | --autoresname ) ( --resroot=<path> | --autoresroot ) [ --rescomment=<description> | --rescomment-file=<path> ]"
+        opts.separator "volume-options:"
+        opts.separator "[ --autoname ] [ --comment=<description> | --comment-file=<path> ]"
 
-      opts.separator ""
-      opts.separator "volume-options:"
-      opts.separator "( --volume-name=<name> | --autovolname ) ( --volroot=<path> | --autovolroot ) [ --volcomment=<description> | --volcomment-file=<path> ]
-"
+        opts.separator ""
+        opts.separator "Session options:"
 
-      opts.separator ""
-      opts.separator "Session options:"
-
-      opts.on("-dPATH",
-                "--destination=PATH",
-                "The directory where to find an existing or create a new tobak backup file structure to which to add the files being backed up.") do |arg|
-          @destination = arg
+        opts.on("--repo=PATH",
+                "The directory where to find an existing or create a new tobak repository file structure.") do |arg|
+          @repo = arg
         end
-
-        opts.on("--tag=sessiontag",
-                "Use the given string instead of the timestamp to name this tobak session. Shall be a string that is easy to handle as a file name (e.g. no special characters like '/' or ':'). The default used when no tag option is given is the time and date of the tobac program start in the format YYYY-MM-DD_hh-mm.") do |arg|
+        
+        opts.on("--init-repo[=PATH]",
+                "Set up a tobak repository at the give path or (if no path is given here ) at the pass given with the --repo command line option.") do |arg|
+          @options[:init_repo] = arg
+        end
+        
+        opts.on("--tag[=sessiontag]",
+                "Use the string given as <sessiontag> instead of the timestamp to name this tobak session. Shall be a string that is easy to handle as a file name (e.g. no special characters like '/' or ':'). The default used when no tag option is given is the time and date of the tobac program start in the format YYYY-MM-DD_hh-mm. String will be interpreted as a strftime format string. If no <sessiontag> argument is given, just overrides a previously given --no-tag option.") do |arg|
           @options[:tag] = arg
         end
 
+        opts.separator ""
+        opts.separator "Volume Options:"
 
-      opts.separator ""
-      opts.separator "Resource Options:"
-
-      opts.on("-rRESNAME",
-                "--resourcename=RESNAME",
-                "Identifier refering to the resource from which to import the files into the repository.") do |arg|
-          raise if @resources.last.name
-          @resources.last.name = arg
+        opts.on("-vVOLUME",
+                "--volume=VOLUME",
+                "Reference to the representation inside the repository of a volume to be backed up.") do |arg|
+          @volumes.push_back(Volume.new)
+          @volumes.last.location = arg
         end
 
-        opts.on("--autoresname",
-                "Let tobak automatically guess a resource name.") do
-          raise if @resources.last.name
-          @resources.last.name = :auto
+        opts.on("--source=PATH",
+                "Path to the original volume to be backed up.") do |arg|
+          raise "wrong command line syntax" if @volumes.empty?
+          @volumes.last.source = arg
         end
 
-      opts.separator ""
-      opts.separator "Volume Options:"
-
-        opts.on("-vVOLNAME",
-                "--volumename=VOLNAME",
-                "Identifier refering to the volume of the resource from which to import the files into the repository.") do |arg|
-          raise if @resources.last.volumes.last.name
-          @resources.last.volumes.last.name = arg
-        end
-
-        opts.on("--autovolname",
+        opts.on("--autoname",
                 "Let tobak automatically guess a volume name.") do
-          raise if @resources.last.volumes.last.name
-          @resources.last.volumes.last.name = :auto
+          raise "wrong command line syntax" if @volumes.empty?
+          @volumes.last.options[:autoname] = true
+        end
+
+        opts.on("--comment=DESCRIPTION",
+                "Store this description of the volume in the volume's meta data in the repository.") do
+          raise "wrong command line syntax" if @volumes.empty?
+          @volumes.last.options[:comment] = arg
+        end
+
+        opts.on("--comment-file=PATH",
+                "Store the text found in the given file as the volume's description in the volume's meta data in the repository.") do
+          raise "wrong command line syntax" if @volumes.empty?
+          @volumes.last.options[:comment_file] = arg
         end
 
 
-      opts.separator ""
-      opts.separator "Common options:"
+        opts.separator ""
+        opts.separator "Common options:"
 
-      opts.on_tail("-h", "--help", "Prints this help") do
-        puts opts
-        exit
-      end
+        opts.on_tail("-h", "--help", "Prints this help") do
+          puts opts
+          exit
+        end
 
-      opts.on_tail("--version", "Show version") do
-        puts Tobak::VERSION
-        exit
-      end
+        opts.on_tail("--version", "Show version") do
+          puts Tobak::VERSION
+          exit
+        end
 
       end # OptionParser.new
 
       option_parser.order(ARGV) do |arg|
-        if @resources.last.volumes.last.name
-          raise if @resources.last.volumes.last.path
-          @resources.last.volumes.last.path = arg
-          @resources.last.volumes << Volume.new
-        else
-          raise unless @resources.last.name
-          raise if @resources.last.path
-          @resources.last.path = arg
-          @resources << Resource.new
-        end
+        raise "wrong command line syntax"
       end
 
     end # def parse
