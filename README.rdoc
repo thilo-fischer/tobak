@@ -62,7 +62,7 @@ tobak backs up data into a directory with a specific folder structure. This back
 
 ### Volumes
 
-We use the term *volume* to refer to an entity that contains or is represented as a file system: partitions on hard disk/solid state drives, USB flash drives and SD Cards, CD-ROMs, network shares, etc. When files from such volume are added to the tobak repository, the directory structure of that volume will be reflected in the tobak repository. The backed up file's and directory's meta data will be reflected in the repository as well.
+We use the term *volume* to refer to an entity that contains or is represented as a file system hierarchy: partitions on hard disk/solid state drives, USB flash drives and SD Cards, CD-ROMs, network shares, etc., but also directories within a file system. When files from such volume are added to the tobak repository, the directory structure of that volume will be reflected in the tobak repository. The backed up file's and directory's meta data will be reflected in the repository as well.
 
 ### Resources
 
@@ -76,12 +76,12 @@ Every run of the +tobak+ tool is considered a *session*. +tobak+ supports to sto
 
 ### Requirements
 
-Usage of hard links is mandatory for tobaks working principle. A tobak repository can only be created on a file system that supports hard link. This is true for most Unix file systems and tobak should work fine with a repository un such file system. Hard links are supported but rather uncommon on NTFS file systems -- so no guarantee whether tobak will work properly when the repository is located on a NTFS partition. FAT32 filesystems for example do not support hard links at all and repositories on such partitions are not supported.
+Usage of hard links is mandatory for tobaks working principle. A tobak repository can only be created on a file system that supports hard link. This is true for most Unix file systems and tobak should work fine with a repository on such file system. Hard links are supported but rather uncommon on NTFS file systems -- so no guarantee whether tobak will work properly when the repository is located on a NTFS partition. FAT32 filesystems for example do not support hard links at all and repositories on such partitions are not supported.
 
 ### Layout
 
 A repository is a specifically organized set of files and directories. All of the repository is located in subdirectories of the repositories *top level directory*. The top level directory can be any direcotry nested arbitrarily deep in a file systems directory hierarchy, but it is recommended to choose a directory not nested deeply (to keep file paths shorter), preferably the root directory of the backup volume's file system.
-The name of the top level directory shall be +tobak-repo+ or any other name suffixed with +.tobak-repo+.
+In the following we will use +$REPO+ to refer to the repositories top level directory.
 
 The repository contains directories and files with specific names and functions, but also directories and files with user specified names and of course names that originate from the files backed up in the repository.
 - Reserved names and their meanings will be discussed individually below.
@@ -104,7 +104,7 @@ Note: +content+, +c_meta+, +meta+ and +log+ won't be direct children of the volu
 
 ##### Directory hierarchy
 
-A volume specific directory may be nested in an arbitrary directory hierarchy within the +volumes+ directory. I.e. a volume directoy +my_volume+ may be located at +tobak-repo/volumes/my_volume+ or at e.g. +tobak-repo/volumes/foo/bar/baz/my_volume+. This hierarcy can be used to group volumes; e.g. group volumes form on hard drive of your desktop PC and from the other hard drive of it and then group these with the harddrive volume group of you laptop like: +tobak-repo/volumes/my_computers/desktop/system_hdd/partition0+, +tobak-repo/volumes/my_computers/desktop/data_hdd/partition0+, +tobak-repo/volumes/my_computers/desktop/data_hdd/partition1+, +tobak-repo/volumes/my_computers/laptop/hdd/partition0+. Or it can be used to group all backups from the CD-ROMs you used to archive your photos, e.g.: +tobak-repo/volumes/cdrom/photo_archive/2010-01+.
+A volume specific directory may be nested in an arbitrary directory hierarchy within the +volumes+ directory. I.e. a volume directoy +my_volume+ may be located at +$REPO/volumes/my_volume+ or at e.g. +$REPO/volumes/foo/bar/baz/my_volume+. This hierarcy can be used to group volumes; e.g. group volumes form on hard drive of your desktop PC and from the other hard drive of it and then group these with the harddrive volume group of you laptop like: +$REPO/volumes/my_computers/desktop/system_hdd/partition0+, +$REPO/volumes/my_computers/desktop/data_hdd/partition0+, +$REPO/volumes/my_computers/desktop/data_hdd/partition1+, +$REPO/volumes/my_computers/laptop/hdd/partition0+. Or it can be used to group all backups from the CD-ROMs you used to archive your photos, e.g.: +$REPO/volumes/cdrom/photo_archive/2010-01+.
 
 The directory structure can be used to set up configuration options that will apply to a set of volumes: Each directory may contain a +config+ file that may contain (volume related) tobak configuration options. The options defined in such config file will be applied to all volumes contained in that directory (recursively). (Innermost configuration options dominate, i.e. if a child directory sets an option its parent directory already set differently, the child directory's option wins.)
 
@@ -118,14 +118,16 @@ Every backup session may create additional, session-specific directories for the
 Tagging the session adds another level to the directory struture of the +volumes+ directory. The seesion specific directory will have the suffix +.tag+.
 
 Where the addional level is inserted depends on the parent directories of the specific volume directory:
-- If none of the volume's ancestor directory (parent directory, grandparent directory, etc. up until +tobak-repo/volumes+) is a volume group or resource directory (+.grp+ or +.res+ suffix in directory name), the session specific directory will be created as a subdirectory of the volume directory, e.g. for +tobak-repo/volumes/foo/bar/baz/my_volume+ and a seesion with tag +2016-12-31+ a directory +tobak-repo/volumes/foo/bar/baz/my_volume/2016-12-31.tag+ will be created.
+- If none of the volume's ancestor directory (parent directory, grandparent directory, etc. up until +$REPO/volumes+) is a volume group or resource directory (+.grp+ or +.res+ suffix in directory name), the session specific directory will be created as a subdirectory of the volume directory, e.g. for +$REPO/volumes/foo/bar/baz/my_volume+ and a seesion with tag +2016-12-31+ a directory +$REPO/volumes/foo/bar/baz/my_volume/2016-12-31.tag+ will be created.
 - If the volume specific directory has (at least) one volume group or resource directory ancestor, the session specific directory will be created as a subdirectory of the outermost volume group or resource directory.
+
+Next to the session specific directories will be one directory called +common+ that contains information persistent among sessions. For volume group or resource directories, +common+ also defines the subdirectory structure to follow within the session specific directories.
 
 +tobak+ sessions may explicitly avoid to add session specific directories (which makes sense e.g. when you backup read-only volumes like CD-ROMs or finalized CD-Rs).
 
 ##### Volume Groups and Resources
 
-If you back up several associated volumes in one session, it often makes sense to have a session specific directory common for all volumes, and not one session specific directory per volume as subdirectory of the volume specific directory. E.g. if you back up all partitions of your desktop computer's multiple hard disks, it makes much sense to have the tag directory in a common directory for all the desktop's harddisks like +tobak-repo/volumes/my_computers/desktop/2016-12-31.tag/system_hdd/partition0+. When you create volume group directories in the directory hierarchy below +tobak-repo/volumes+ all volumes contained in that directory (directly or recursivly) will share a common session specific directory.
+If you back up several associated volumes in one session, it often makes sense to have a session specific directory common for all volumes, and not one session specific directory per volume as subdirectory of the volume specific directory. E.g. if you back up all partitions of your desktop computer's multiple hard disks, it makes much sense to have the tag directory in a common directory for all the desktop's harddisks like +$REPO/volumes/my_computers/desktop/2016-12-31.tag/system_hdd/partition0+. When you create volume group directories in the directory hierarchy below +$REPO/volumes+ all volumes contained in that directory (directly or recursivly) will share a common session specific directory.
 To add a volume group directory, create a directory and simply add the suffix +.grp+ to the directory name.
 
 A resource directory is a special volume group directory where there is some concrete entity that contains the volumes in the group and where additional meta data on that entity can be stored in the backup repository.
@@ -144,10 +146,87 @@ For each file content represented in the repository, one directory is created in
 Stores meta data and log files for +tobak+ sessions as well as symlinks to the session specific directories in the +volumes+ subdirectory hierarchy.
 For every session, a subdirectory of +sessions+ named as the session's tag will be created. These session specific subdirectories will have further subdirectories, one for every invokation of the +tobak+ execuable sharing that specific tag.
 
-#### File +meta+
+#### File +tobak-repo+
 
-Contains meta data on the repository, e.g. date of repository creation, compatibility version number of the tobak repository, version number of the tobak program version that the repository is compatible to (which is the tobak version that created the repository initially or that upgraded the repository from a previous to a more recent compatibility version).
+The file is used to identify the directory as a tobak repository's top level directory.
+
+It contains meta data on the repository, e.g. date of repository creation, compatibility version number of the tobak repository, version number of the tobak program version that the repository is compatible to (which is the tobak version that created the repository initially or that upgraded the repository from a previous to a more recent compatibility version).
 
 #### File +config+
 
 Contains configuration options that apply to the tobak repository.
+
+#### File +readme.txt+
+
+Contains a short explanation text about tobak and about what can be found where in the repository.
+
+## Usage
+
+### Repository Specification
+
+Most +tobak+ invocations operate on a specific tobak repository, and often on objects within that repository.
+
+You can always specify the repository explicitly with the +--repo=<repo-top-level-directory>+ command line option and give objects within that repository relative to the repositories top level directory or the top level directory relevant for that kind of object (e.g. +--volume=volumes/foo/bar/some_volume+ or just +--volume=foo/bar/some_volume+, the latter is the preferred format).
+
+You can also save you the explicit +--repo+ specification and give absolute paths for the objects within the repository like +--volume=<repo-top-level-directory>/volumes/foo/bar/some_volume+. +tobak+ will implicitly derive the repositories top level directory form the object's file paths.
+
+### Repository Initialization
+
+Before you can do any backups, you need to set up a tobak repository. You can create a repository in any directory of a file system that supports hard links, but it is suggested to use a directory not nested too deep in some directory hierarchy. It is suggested to use the root directory of you backup volume or a direct subdirectory of it.
+
+ tobak --init-repo=<repo-top-level-directory>
+or
+ tobak --repo=<repo-top-level-directory> --init-repo
+
+Note: +tobak+ does not provide any encryption or any access control! This is out of scope, there are other tools out there to handle these issues. You should consider to encrypt your backup repository, i.e. to put the repository on an encrypted file system. You should also run the +tobak+ tool with an appropriate user account; the repository and all the files created by +tobak+ will be owned by the user that runs the +tobak+ program. Depending on your use case, it may be a good idea to create another user account on your system(s) for this specific purpose, or to run +tobak+ from you system's +root+ user account.
+
+### Adding Volumes
+
+#### Subdirectory Structure
+
+When a repository is getting initialized, a +volumes+ directory will be created in the repository's top level directory. You can create an arbitrary subdirectory hierarchy below the +volumes+ directory by simply creating directories with +mkdir+ or you favorite file explorer. (Don't forget to create these with the right ownership and permissions.)
+
+When you create a directory with a direcoty name suffixed with +.grp+, it will be a volume group directory. When you create a directory with a direcotry name suffixed with +.res+, it will be a resource directory. When you intend to add aditional subdirectories below a volume group or resource directory, first add a +common+ directory as direct subdirectory of the +*.{grp,res}+ directory and add further subdirectories in +common+.
+
+TODO It is planned to add an interactive mode for the tobak tool for resouce, volume group and possibly general +volume+ subdirectory creation (in that order of relevance/urgency).
+
+You can run
+ tobak --repo=<repo-top-level-directory> --add-host-as-resource=foo/bar/my_resource
+or
+ tobak --add-host-as-resource=<repo-top-level-directory>/volumes/foo/bar/my_resource
+to create a resource directory as +volumes/foo/bar/my_resource+ and make +tobak+ aquire information about the system you now run +tobak+ on and store it as resource meta data.
+
+#### Volumes
+
+To add directories for volume backup to the repository, just run
+ tobak --announce --repo=<repo-top-level-directory> --volume=foo/bar/my_resource --source=/path/to/original/volume
+or
+ tobak --announce --volume=<repo-top-level-directory>/volumes/foo/bar/my_resource --source=/path/to/original/volume
+
++tobak+ will create the according volume direcotry (+<repo-top-level-directory>/volumes/foo/bar/my_resource.vol+ for the given example) along with the mandatory files and directories within it. It will detect information about the original volume and store is as volume meta data.
+
+If you leave away the +--announce+ command line option, +tobak+ will already start to make a backup of the original volume at the given location.
+
+### Backing Up Volumes
+
+To backup a volume not added to the repository before, you can invoke +tobak+ like
+ tobak --repo=<repo-top-level-directory> --volume=foo/bar/my_resource --source=/path/to/original/volume
+or
+ tobak --volume=<repo-top-level-directory>/volumes/foo/bar/my_resource --source=/path/to/original/volume
+(same as adding the volume without the +--announce+ command line option).
+Please note that the order of the command line options is relevant: +--source+ must follow +--volume+.
+This will first add the volume to the repository (as described above) and then do a backup of the original volume in the repository.
+
+When adding another backup session of a volume already known to the repository, you may leave away
+- either the +--volume+ command line option and let +tobak+ determine the correct volume directory in the repository, which will generally work, but may fail in some situations due to ambiguities (+tobak+ will ask you then or state that the +--volume+ switch is mandatory in that situation),
+- or the +--source+ command line option if it is still the same as it was the last time the volume was backed up (or as it was when the volume was added to the repository in case there has not been any backup made yet).
+It is suggested to rather leave away the +--source+ than the +--volumes+ command line option.
+
+You can backup multiple volumes with one invokation of +tobak+ by giving multiple +--volume+/+--source+ command line option pairs.
+You may leave away +--volume+ or +--source+ options as before, as long as you don't leave away the +--source+ at one at the +--volume+ option at the following pair (which would lead to ambiguity: When doing so with e.g. +--volume=vol_a --source=src_a --volume=vol_b --source=src_b+ one gets +--volume=vol_a --source=src_b+ and +tobak+ must assume that +src_b+ shall be backed up as +vol_a+).
+
+You can also backup all volumes in a certain repository directory (if you can leave away +--source+ command line option for all these volumes) by running
+ tobak --repo=<repo-top-level-directory> --vol-recurs=foo/bar
+. This can be useful to backup resources (or volume groups in general). If the directory in the +--vol-recurs+ command line option is a resource directory (has .res suffix), +tobak+ will also update the resource's meta data (if applicable).
+Command line option +--resource+ has the same effect as +--vol-recurs+ for resources, but will give error messages if the given directory is *not* a resource directory. It is suggested to use the +--resource+ command line option if you intend to backup a resource as this will prevent accidental wrong usage (to some degree).
+
